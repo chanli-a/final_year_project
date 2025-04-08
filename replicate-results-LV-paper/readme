@@ -1,1 +1,2 @@
-
+Replicating figures and results from Mustri et al., 2025. "Accuracy of the Lotka-Volterra Model fails in strongly coupled microbial consumer-resource systems". 
+Starting with figures 1 and 2, coding them in python instead of julia.
