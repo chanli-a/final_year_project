@@ -1,0 +1,442 @@
+install.packages("tidyverse")
+
+library(tidyverse)
+
+# ─── 1) Load & preprocess ───────────────────────────────────────────────────
+df <- read_csv("output/metrics_N50.csv") %>%
+  mutate(T_C = T_K - 273.15)
+
+df_traj <- read_csv("output/traj_N50.csv") %>%
+  mutate(T_C = T_K - 273.15)
+
+# Summarise
+df_err <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    mean    = mean(ErrEqAb),
+    p25     = quantile(ErrEqAb, 0.25),
+    p75     = quantile(ErrEqAb, 0.75),
+    low95   = quantile(ErrEqAb, 0.025),
+    high95  = quantile(ErrEqAb, 0.975)
+  )
+
+# Plot
+ggplot(df_err, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25,  ymax = p75),
+              fill = "#c49ec4", alpha = 0.6) +
+  geom_line(aes(y = mean), size = 0.8) +
+  geom_point(aes(y = mean), size = 2) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  theme_classic() +
+  labs(
+    title = "Equilibrium Abundance Error",
+    x     = "Temperature (°C)",
+    y     = "Error"
+  )
+
+
+df_ov <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    mean   = mean(overlap),
+    p25    = quantile(overlap, 0.25),
+    p75    = quantile(overlap, 0.75),
+    low95  = quantile(overlap, 0.025),
+    high95 = quantile(overlap, 0.975)
+  )
+
+ggplot(df_ov, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25,  ymax = p75),
+              fill = "#c49ec4", alpha = 0.6) +
+  geom_line(aes(y = mean), size = 0.8) +
+  geom_point(aes(y = mean), size = 2) +
+  theme_classic() +
+  labs(
+    title = "Species Overlap",
+    x     = "Temperature (°C)",
+    y     = "Number of overlapping species"
+  )
+
+
+
+df_j <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    mean   = mean(jaccard),
+    p25    = quantile(jaccard, 0.25),
+    p75    = quantile(jaccard, 0.75),
+    low95  = quantile(jaccard, 0.025),
+    high95 = quantile(jaccard, 0.975)
+  )
+
+ggplot(df_j, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25,  ymax = p75),
+              fill = "#c49ec4", alpha = 0.6) +
+  geom_line(aes(y = mean), size = 0.8) +
+  geom_point(aes(y = mean), size = 2) +
+  geom_hline(yintercept = 1.0, linetype = "dashed") +
+  theme_classic() +
+  labs(
+    title = "Jaccard Similarity",
+    x     = "Temperature (°C)",
+    y     = "Jaccard Index"
+  )
+
+
+df_bc <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    mean   = mean(bray_curtis),
+    p25    = quantile(bray_curtis, 0.25),
+    p75    = quantile(bray_curtis, 0.75),
+    low95  = quantile(bray_curtis, 0.025),
+    high95 = quantile(bray_curtis, 0.975)
+  )
+
+ggplot(df_bc, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25,  ymax = p75),
+              fill = "#c49ec4", alpha = 0.6) +
+  geom_line(aes(y = mean), size = 0.8) +
+  geom_point(aes(y = mean), size = 2) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  theme_classic() +
+  labs(
+    title = "Bray–Curtis Dissimilarity",
+    x     = "Temperature (°C)",
+    y     = "Bray–Curtis"
+  )
+
+
+df_sh <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    m_mi    = mean(shannon_mi),
+    p25_mi  = quantile(shannon_mi, 0.25),
+    p75_mi  = quantile(shannon_mi, 0.75),
+    low95_mi= quantile(shannon_mi, 0.025),
+    high95_mi=quantile(shannon_mi, 0.975),
+    m_lv    = mean(shannon_lv),
+    p25_lv  = quantile(shannon_lv, 0.25),
+    p75_lv  = quantile(shannon_lv, 0.75),
+    low95_lv= quantile(shannon_lv, 0.025),
+    high95_lv=quantile(shannon_lv, 0.975)
+  )
+
+ggplot(df_sh, aes(x = T_C)) +
+  # MiCRM band
+  geom_ribbon(aes(ymin = low95_mi, ymax = high95_mi),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25_mi,  ymax = p75_mi),
+              fill = "#00bfff", alpha = 0.6) +
+  # GLV band
+  geom_ribbon(aes(ymin = low95_lv, ymax = high95_lv),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25_lv,  ymax = p75_lv),
+              fill = "#ff8c00", alpha = 0.6) +
+  # Lines
+  geom_line(aes(y = m_mi), color = "#00bfff", size = 0.8) +
+  geom_line(aes(y = m_lv), color = "#ff8c00", size = 0.8) +
+  geom_point(aes(y = m_mi), color = "#00bfff", size = 2) +
+  geom_point(aes(y = m_lv), color = "#ff8c00", size = 2) +
+  theme_classic() +
+  labs(
+    title = "Shannon Diversity (MiCRM vs. GLV)",
+    x     = "Temperature (°C)",
+    y     = "Shannon Index",
+    color = ""
+  )
+
+
+# Stability overlay
+df_stab <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    m_mi    = mean(stab_mi),
+    p25_mi  = quantile(stab_mi, 0.25),
+    p75_mi  = quantile(stab_mi, 0.75),
+    low95_mi= quantile(stab_mi, 0.025),
+    high95_mi=quantile(stab_mi, 0.975),
+    m_lv    = mean(stab_glv),
+    p25_lv  = quantile(stab_glv, 0.25),
+    p75_lv  = quantile(stab_glv, 0.75),
+    low95_lv= quantile(stab_glv, 0.025),
+    high95_lv=quantile(stab_glv, 0.975)
+  )
+
+ggplot(df_stab, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95_mi, ymax = high95_mi),
+              fill = "#87cefa", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25_mi,  ymax = p75_mi),
+              fill = "#00bfff", alpha = 0.6) +
+  geom_ribbon(aes(ymin = low95_lv, ymax = high95_lv),
+              fill = "#ffe4b5", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25_lv,  ymax = p75_lv),
+              fill = "#ff8c00", alpha = 0.6) +
+  geom_line(aes(y = m_mi), color = "#00bfff", size = 0.8) +
+  geom_line(aes(y = m_lv), color = "#ff8c00", size = 0.8) +
+  geom_point(aes(y = m_mi), color = "#00bfff", size = 2) +
+  geom_point(aes(y = m_lv), color = "#ff8c00", size = 2) +
+  theme_classic() +
+  labs(
+    title = "Stability (MiCRM vs. GLV)",
+    x     = "Temperature (°C)",
+    y     = "Leading Eigenvalue"
+  )
+
+# Absolute Stability Error
+df_absstab <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    mean   = mean(abs_stab_err),
+    p25    = quantile(abs_stab_err, 0.25),
+    p75    = quantile(abs_stab_err, 0.75),
+    low95  = quantile(abs_stab_err, 0.025),
+    high95 = quantile(abs_stab_err, 0.975)
+  )
+
+ggplot(df_absstab, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25,  ymax = p75),
+              fill = "#c49ec4", alpha = 0.6) +
+  geom_line(aes(y = mean), size = 0.8) +
+  geom_point(aes(y = mean), size = 2) +
+  theme_classic() +
+  labs(
+    title = "Absolute Stability Error",
+    x     = "Temperature (°C)",
+    y     = "Error"
+  )
+
+
+# Reactivity overlay
+df_react <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    m_mi    = mean(react_mi),
+    p25_mi  = quantile(react_mi, 0.25),
+    p75_mi  = quantile(react_mi, 0.75),
+    low95_mi= quantile(react_mi, 0.025),
+    high95_mi=quantile(react_mi, 0.975),
+    m_lv    = mean(react_glv),
+    p25_lv  = quantile(react_glv, 0.25),
+    p75_lv  = quantile(react_glv, 0.75),
+    low95_lv= quantile(react_glv, 0.025),
+    high95_lv=quantile(react_glv, 0.975)
+  )
+
+ggplot(df_react, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95_mi, ymax = high95_mi),
+              fill = "#87cefa", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25_mi,  ymax = p75_mi),
+              fill = "#00bfff", alpha = 0.6) +
+  geom_ribbon(aes(ymin = low95_lv, ymax = high95_lv),
+              fill = "#ffe4b5", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25_lv,  ymax = p75_lv),
+              fill = "#ff8c00", alpha = 0.6) +
+  geom_line(aes(y = m_mi), color = "#00bfff", size = 0.8) +
+  geom_line(aes(y = m_lv), color = "#ff8c00", size = 0.8) +
+  geom_point(aes(y = m_mi), color = "#00bfff", size = 2) +
+  geom_point(aes(y = m_lv), color = "#ff8c00", size = 2) +
+  theme_classic() +
+  labs(
+    title = "Reactivity (MiCRM vs. GLV)",
+    x     = "Temperature (°C)",
+    y     = "Hermitian Leading Eigenvalue"
+  )
+
+# Absolute Reactivity Error
+df_absreact <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    mean   = mean(abs_react_err),
+    p25    = quantile(abs_react_err, 0.25),
+    p75    = quantile(abs_react_err, 0.75),
+    low95  = quantile(abs_react_err, 0.025),
+    high95 = quantile(abs_react_err, 0.975)
+  )
+
+ggplot(df_absreact, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25,  ymax = p75),
+              fill = "#c49ec4", alpha = 0.6) +
+  geom_line(aes(y = mean), size = 0.8) +
+  geom_point(aes(y = mean), size = 2) +
+  theme_classic() +
+  labs(
+    title = "Absolute Reactivity Error",
+    x     = "Temperature (°C)",
+    y     = "Error"
+  )
+
+
+# Hessian norm
+df_hess <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    mean   = mean(hessian_norm),
+    p25    = quantile(hessian_norm, 0.25),
+    p75    = quantile(hessian_norm, 0.75),
+    low95  = quantile(hessian_norm, 0.025),
+    high95 = quantile(hessian_norm, 0.975)
+  )
+
+ggplot(df_hess, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25,  ymax = p75),
+              fill = "#c49ec4", alpha = 0.6) +
+  geom_line(aes(y = mean), size = 0.8) +
+  geom_point(aes(y = mean), size = 2) +
+  theme_classic() +
+  labs(
+    title = "Hessian Frobenius Norm",
+    x     = "Temperature (°C)",
+    y     = "||H||"
+  )
+
+# Non-normality
+df_nn <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    mean   = mean(non_normality),
+    p25    = quantile(non_normality, 0.25),
+    p75    = quantile(non_normality, 0.75),
+    low95  = quantile(non_normality, 0.025),
+    high95 = quantile(non_normality, 0.975)
+  )
+
+ggplot(df_nn, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25,  ymax = p75),
+              fill = "#c49ec4", alpha = 0.6) +
+  geom_line(aes(y = mean), size = 0.8) +
+  geom_point(aes(y = mean), size = 2) +
+  theme_classic() +
+  labs(
+    title = "Matrix Non-normality",
+    x     = "Temperature (°C)",
+    y     = "||[J, Jᵀ]||"
+  )
+
+
+# Epsilon
+df_eps <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    mean   = mean(epsilon),
+    p25    = quantile(epsilon, 0.25),
+    p75    = quantile(epsilon, 0.75),
+    low95  = quantile(epsilon, 0.025),
+    high95 = quantile(epsilon, 0.975)
+  )
+
+ggplot(df_eps, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25,  ymax = p75),
+              fill = "#c49ec4", alpha = 0.6) +
+  geom_line(aes(y = mean), size = 0.8) +
+  geom_point(aes(y = mean), size = 2) +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  theme_classic() +
+  labs(
+    title = "Epsilon (Timescale Separation)",
+    x     = "Temperature (°C)",
+    y     = "ε"
+  )
+
+# Log10(ε/t_eq)
+df_loge <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    mean   = mean(log10_eps_t_eq),
+    p25    = quantile(log10_eps_t_eq, 0.25),
+    p75    = quantile(log10_eps_t_eq, 0.75),
+    low95  = quantile(log10_eps_t_eq, 0.025),
+    high95 = quantile(log10_eps_t_eq, 0.975)
+  )
+
+ggplot(df_loge, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25,  ymax = p75),
+              fill = "#c49ec4", alpha = 0.6) +
+  geom_line(aes(y = mean), size = 0.8) +
+  geom_point(aes(y = mean), size = 2) +
+  theme_classic() +
+  labs(
+    title = "Log₁₀(ε / t_eq)",
+    x     = "Temperature (°C)",
+    y     = "log10(ε / t_eq)"
+  )
+
+
+df_tau <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    mC    = mean(tau_C), p25C   = quantile(tau_C,   0.25),
+    p75C  = quantile(tau_C,   0.75), low95C = quantile(tau_C, 0.025),
+    high95C = quantile(tau_C, 0.975),
+    mR    = mean(tau_R), p25R   = quantile(tau_R,   0.25),
+    p75R  = quantile(tau_R,   0.75), low95R = quantile(tau_R, 0.025),
+    high95R = quantile(tau_R, 0.975)
+  )
+
+ggplot(df_tau, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95C, ymax = high95C),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25C,  ymax = p75C),
+              fill = "#00bfff", alpha = 0.6) +
+  geom_ribbon(aes(ymin = low95R, ymax = high95R),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25R,  ymax = p75R),
+              fill = "#ff8c00", alpha = 0.6) +
+  geom_line(aes(y = mC), color = "#00bfff", size = 0.8) +
+  geom_line(aes(y = mR), color = "#ff8c00", size = 0.8) +
+  geom_point(aes(y = mC), color = "#00bfff", size = 2) +
+  geom_point(aes(y = mR), color = "#ff8c00", size = 2) +
+  theme_classic() +
+  labs(
+    title = "Timescale Separation: τ_C vs τ_R",
+    x     = "Temperature (°C)",
+    y     = "Timescale"
+  )
+
+
+df_td <- df_traj %>%
+  group_by(T_C) %>%
+  summarise(
+    mean   = mean(ErrTraj),
+    p25    = quantile(ErrTraj, 0.25),
+    p75    = quantile(ErrTraj, 0.75),
+    low95  = quantile(ErrTraj, 0.025),
+    high95 = quantile(ErrTraj, 0.975)
+  )
+
+ggplot(df_td, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95),
+              fill = "lightblue", alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25,  ymax = p75),
+              fill = "#c49ec4", alpha = 0.6) +
+  geom_line(aes(y = mean), size = 0.8) +
+  geom_point(aes(y = mean), size = 2) +
+  theme_classic() +
+  labs(
+    title = "Trajectory Deviation",
+    x     = "Temperature (°C)",
+    y     = "ErrTraj"
+  )
+
+
