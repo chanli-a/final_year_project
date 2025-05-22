@@ -1,6 +1,11 @@
 install.packages("tidyverse")
 
 library(tidyverse)
+library(ggplot2)
+
+
+setwd("C:/Users/Chan Li/OneDrive - Imperial College London/Third Year/FYP/Code-related/final_year_project/temp_abundance")
+getwd()
 
 # ─── 1) Load & preprocess ───────────────────────────────────────────────────
 df <- read_csv("output/metrics_N50.csv") %>%
@@ -9,32 +14,67 @@ df <- read_csv("output/metrics_N50.csv") %>%
 df_traj <- read_csv("output/traj_N50.csv") %>%
   mutate(T_C = T_K - 273.15)
 
-# Summarise
+library(ggplot2)
+library(dplyr)
+
+# Summarise with na.rm
 df_err <- df %>%
   group_by(T_C) %>%
   summarise(
-    mean    = mean(ErrEqAb),
-    p25     = quantile(ErrEqAb, 0.25),
-    p75     = quantile(ErrEqAb, 0.75),
-    low95   = quantile(ErrEqAb, 0.025),
-    high95  = quantile(ErrEqAb, 0.975)
-  )
+    mean   = mean(ErrEqAb,      na.rm = TRUE),
+    p25    = quantile(ErrEqAb, 0.25, na.rm = TRUE),
+    p75    = quantile(ErrEqAb, 0.75, na.rm = TRUE),
+    low95  = quantile(ErrEqAb, 0.025, na.rm = TRUE),
+    high95 = quantile(ErrEqAb, 0.975, na.rm = TRUE)
+  ) %>%
+  ungroup()
 
-# Plot
-ggplot(df_err, aes(x = T_C)) +
-  geom_ribbon(aes(ymin = low95, ymax = high95),
-              fill = "lightblue", alpha = 0.3) +
-  geom_ribbon(aes(ymin = p25,  ymax = p75),
-              fill = "#c49ec4", alpha = 0.6) +
-  geom_line(aes(y = mean), size = 0.8) +
-  geom_point(aes(y = mean), size = 2) +
+# Identify outliers per T_C
+df_out <- df %>%
+  group_by(T_C) %>%
+  filter(ErrEqAb < quantile(ErrEqAb, 0.025, na.rm = TRUE) |
+         ErrEqAb > quantile(ErrEqAb, 0.975, na.rm = TRUE)) %>%
+  ungroup()
+
+# Plot with explicit legends
+p1 <- ggplot() +
+  # 95% interval
+  geom_ribbon(data = df_err,
+              aes(x = T_C, ymin = low95, ymax = high95, fill = "95% interval"),
+              alpha = 0.3) +
+  # 50% IQR
+  geom_ribbon(data = df_err,
+              aes(x = T_C, ymin = p25, ymax = p75, fill = "50% IQR"),
+              alpha = 0.6) +
+  # Mean line
+  geom_line(data = df_err,
+            aes(x = T_C, y = mean, color = "Mean"),
+            size = 0.8) +
+  geom_point(data = df_err,
+             aes(x = T_C, y = mean, shape = "Mean", color = "Mean"),
+             size = 2) +
+  # Outliers
+  geom_point(data = df_out,
+             aes(x = T_C, y = ErrEqAb, shape = "Outliers"),
+             color = "lightblue", size = 2, alpha = 0.7) +
+  # Reference line
   geom_hline(yintercept = 0, linetype = "dashed") +
+  # Manual scales so we get one legend
+  scale_fill_manual(name = "", 
+                    values = c("50% IQR" = "#c49ec4", "95% interval" = "lightblue")) +
+  scale_color_manual(name = "", values = c("Mean" = "black")) +
+  scale_shape_manual(name = "", values = c("Mean" = 16, "Outliers" = 17)) +
   theme_classic() +
   labs(
     title = "Equilibrium Abundance Error",
     x     = "Temperature (°C)",
     y     = "Error"
   )
+
+# Display:
+print(p1)
+
+
 
 
 df_ov <- df %>%
