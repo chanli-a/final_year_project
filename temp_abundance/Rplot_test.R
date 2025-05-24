@@ -3,7 +3,6 @@ install.packages("tidyverse")
 library(tidyverse)
 library(ggplot2)
 
-
 setwd("C:/Users/Chan Li/OneDrive - Imperial College London/Third Year/FYP/Code-related/final_year_project/temp_abundance")
 getwd()
 
@@ -14,10 +13,10 @@ df <- read_csv("output/metrics_N50.csv") %>%
 df_traj <- read_csv("output/traj_N50.csv") %>%
   mutate(T_C = T_K - 273.15)
 
-library(ggplot2)
-library(dplyr)
 
-# Summarise with na.rm
+# Equilibrium abundance error
+
+
 df_err <- df %>%
   group_by(T_C) %>%
   summarise(
@@ -33,7 +32,7 @@ df_err <- df %>%
 df_out <- df %>%
   group_by(T_C) %>%
   filter(ErrEqAb < quantile(ErrEqAb, 0.025, na.rm = TRUE) |
-         ErrEqAb > quantile(ErrEqAb, 0.975, na.rm = TRUE)) %>%
+           ErrEqAb > quantile(ErrEqAb, 0.975, na.rm = TRUE)) %>%
   ungroup()
 
 # Plot with explicit legends
@@ -60,8 +59,7 @@ p1 <- ggplot() +
   # Reference line
   geom_hline(yintercept = 0, linetype = "dashed") +
   # Manual scales so we get one legend
-  scale_fill_manual(name = "", 
-                    values = c("50% IQR" = "#c49ec4", "95% interval" = "lightblue")) +
+  scale_fill_manual(name = "", values = c("50% IQR" = "#c49ec4", "95% interval" = "lightblue")) +
   scale_color_manual(name = "", values = c("Mean" = "black")) +
   scale_shape_manual(name = "", values = c("Mean" = 16, "Outliers" = 17)) +
   theme_classic() +
@@ -76,50 +74,92 @@ print(p1)
 
 
 
-
+# Summarise
 df_ov <- df %>%
   group_by(T_C) %>%
   summarise(
-    mean   = mean(overlap),
-    p25    = quantile(overlap, 0.25),
-    p75    = quantile(overlap, 0.75),
-    low95  = quantile(overlap, 0.025),
-    high95 = quantile(overlap, 0.975)
-  )
+    mean   = mean(overlap,      na.rm = TRUE),
+    p25    = quantile(overlap, 0.25, na.rm = TRUE),
+    p75    = quantile(overlap, 0.75, na.rm = TRUE),
+    low95  = quantile(overlap, 0.025, na.rm = TRUE),
+    high95 = quantile(overlap, 0.975, na.rm = TRUE)
+  ) %>% ungroup()
 
-ggplot(df_ov, aes(x = T_C)) +
-  geom_ribbon(aes(ymin = low95, ymax = high95),
-              fill = "lightblue", alpha = 0.3) +
-  geom_ribbon(aes(ymin = p25,  ymax = p75),
-              fill = "#c49ec4", alpha = 0.6) +
-  geom_line(aes(y = mean), size = 0.8) +
-  geom_point(aes(y = mean), size = 2) +
+# Outliers
+df_ov_out <- df %>%
+  group_by(T_C) %>%
+  filter(overlap < quantile(overlap, 0.025, na.rm=TRUE) |
+           overlap > quantile(overlap, 0.975, na.rm=TRUE)) %>%
+  ungroup()
+
+# Plot
+p2 <- ggplot() +
+  geom_ribbon(data = df_ov,
+              aes(x = T_C, ymin = low95, ymax = high95, fill = "95% interval"),
+              alpha = 0.3) +
+  geom_ribbon(data = df_ov,
+              aes(x = T_C, ymin = p25, ymax = p75, fill = "50% IQR"),
+              alpha = 0.6) +
+  geom_line(data = df_ov,
+            aes(x = T_C, y = mean, color = "Mean"),
+            size = 0.8) +
+  geom_point(data = df_ov,
+             aes(x = T_C, y = mean, shape = "Mean", color = "Mean"),
+             size = 2) +
+  geom_point(data = df_ov_out,
+             aes(x = T_C, y = overlap, shape = "Outliers"),
+             color = "lightblue", size = 2, alpha = 0.7) +
+  scale_fill_manual(name = "", values = c("50% IQR" = "#c49ec4", "95% interval" = "lightblue")) +
+  scale_color_manual(name = "", values = c("Mean" = "black")) +
+  scale_shape_manual(name = "", values = c("Mean" = 16, "Outliers" = 17)) +
   theme_classic() +
   labs(
     title = "Species Overlap",
     x     = "Temperature (°C)",
     y     = "Number of overlapping species"
   )
+print(p2)
 
 
 
+# Summarise
 df_j <- df %>%
   group_by(T_C) %>%
   summarise(
-    mean   = mean(jaccard),
-    p25    = quantile(jaccard, 0.25),
-    p75    = quantile(jaccard, 0.75),
-    low95  = quantile(jaccard, 0.025),
-    high95 = quantile(jaccard, 0.975)
-  )
+    mean   = mean(jaccard,      na.rm = TRUE),
+    p25    = quantile(jaccard, 0.25, na.rm = TRUE),
+    p75    = quantile(jaccard, 0.75, na.rm = TRUE),
+    low95  = quantile(jaccard, 0.025, na.rm = TRUE),
+    high95 = quantile(jaccard, 0.975, na.rm = TRUE)
+  ) %>% ungroup()
 
-ggplot(df_j, aes(x = T_C)) +
-  geom_ribbon(aes(ymin = low95, ymax = high95),
-              fill = "lightblue", alpha = 0.3) +
-  geom_ribbon(aes(ymin = p25,  ymax = p75),
-              fill = "#c49ec4", alpha = 0.6) +
-  geom_line(aes(y = mean), size = 0.8) +
-  geom_point(aes(y = mean), size = 2) +
+# Outliers
+df_j_out <- df %>%
+  group_by(T_C) %>%
+  filter(jaccard < quantile(jaccard, 0.025, na.rm=TRUE) |
+           jaccard > quantile(jaccard, 0.975, na.rm=TRUE)) %>%
+  ungroup()
+
+# Plot
+p3 <- ggplot() +
+  geom_ribbon(data = df_j,
+              aes(x = T_C, ymin = low95, ymax = high95, fill = "95% interval"),
+              alpha = 0.3) +
+  geom_ribbon(data = df_j,
+              aes(x = T_C, ymin = p25, ymax = p75, fill = "50% IQR"),
+              alpha = 0.6) +
+  geom_line(data = df_j,
+            aes(x = T_C, y = mean, color = "Mean"),
+            size = 0.8) +
+  geom_point(data = df_j,
+             aes(x = T_C, y = mean, shape = "Mean", color = "Mean"),
+             size = 2) +
+  geom_point(data = df_j_out,
+             aes(x = T_C, y = jaccard, shape = "Outliers"),
+             color = "lightblue", size = 2, alpha = 0.7) +
+  scale_fill_manual(name = "", values = c("50% IQR" = "#c49ec4", "95% interval" = "lightblue")) +
+  scale_color_manual(name = "", values = c("Mean" = "black")) +
+  scale_shape_manual(name = "", values = c("Mean" = 16, "Outliers" = 17)) +
   geom_hline(yintercept = 1.0, linetype = "dashed") +
   theme_classic() +
   labs(
@@ -127,6 +167,8 @@ ggplot(df_j, aes(x = T_C)) +
     x     = "Temperature (°C)",
     y     = "Jaccard Index"
   )
+print(p3)
+
 
 
 df_bc <- df %>%
@@ -375,7 +417,7 @@ ggplot(df_nn, aes(x = T_C)) +
 df_eps <- df %>%
   group_by(T_C) %>%
   summarise(
-    mean   = mean(epsilon),
+    med    = median(epsilon),
     p25    = quantile(epsilon, 0.25),
     p75    = quantile(epsilon, 0.75),
     low95  = quantile(epsilon, 0.025),
@@ -383,19 +425,46 @@ df_eps <- df %>%
   )
 
 ggplot(df_eps, aes(x = T_C)) +
-  geom_ribbon(aes(ymin = low95, ymax = high95),
-              fill = "lightblue", alpha = 0.3) +
-  geom_ribbon(aes(ymin = p25,  ymax = p75),
-              fill = "#c49ec4", alpha = 0.6) +
-  geom_line(aes(y = mean), size = 0.8) +
-  geom_point(aes(y = mean), size = 2) +
-  geom_hline(yintercept = 1, linetype = "dashed") +
+  # 95% CI ribbon
+  geom_ribbon(aes(ymin = low95, ymax = high95, fill = "95% CI"), alpha = 0.3) +
+  # IQR ribbon
+  geom_ribbon(aes(ymin = p25, ymax = p75, fill = "IQR"), alpha = 0.6) +
+  # Median line and points
+  geom_line(aes(y = med, color = "Median"), size = 0.8) +
+  geom_point(aes(y = med, color = "Median"), size = 2) +
+  # Reference line at 1
+  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40") +
+  # Custom color/fill scales
+  scale_fill_manual(
+    name = "Shaded areas",
+    values = c(
+      "95% CI" = "lightblue",
+      "IQR"    = "#c49ec4"
+    )
+  ) +
+  scale_color_manual(
+    name = "Line",
+    values = c(
+      "Median" = "black"  # dark blue for visibility
+    )
+  ) +
+  # Theme and formatting
   theme_classic() +
   labs(
-    title = "Epsilon (Timescale Separation)",
+    title = "Consumer-resource timescale separation",
     x     = "Temperature (°C)",
-    y     = "ε"
+    y     = expression(epsilon)
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title = element_text(size = 16),
+    axis.text  = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    legend.text  = element_text(size = 12),
+    legend.position = c(0.75, 0.8),
+    legend.background = element_rect(fill = alpha("white", 0.7), color = NA)
   )
+
 
 # Log10(ε/t_eq)
 df_loge <- df %>%
@@ -423,36 +492,120 @@ ggplot(df_loge, aes(x = T_C)) +
   )
 
 
+
+# timescale separation tauC and tauR 
+
+
 df_tau <- df %>%
   group_by(T_C) %>%
   summarise(
-    mC    = mean(tau_C), p25C   = quantile(tau_C,   0.25),
-    p75C  = quantile(tau_C,   0.75), low95C = quantile(tau_C, 0.025),
-    high95C = quantile(tau_C, 0.975),
-    mR    = mean(tau_R), p25R   = quantile(tau_R,   0.25),
-    p75R  = quantile(tau_R,   0.75), low95R = quantile(tau_R, 0.025),
-    high95R = quantile(tau_R, 0.975)
+    medC    = median(tau_C),
+    p25C    = quantile(tau_C, 0.25),
+    p75C    = quantile(tau_C, 0.75),
+    low90C  = quantile(tau_C, 0.05),
+    high90C = quantile(tau_C, 0.95),
+    
+    medR    = median(tau_R),
+    p25R    = quantile(tau_R, 0.25),
+    p75R    = quantile(tau_R, 0.75),
+    low90R  = quantile(tau_R, 0.05),
+    high90R = quantile(tau_R, 0.95)
   )
 
 ggplot(df_tau, aes(x = T_C)) +
-  geom_ribbon(aes(ymin = low95C, ymax = high95C),
-              fill = "lightblue", alpha = 0.3) +
-  geom_ribbon(aes(ymin = p25C,  ymax = p75C),
-              fill = "#00bfff", alpha = 0.6) +
-  geom_ribbon(aes(ymin = low95R, ymax = high95R),
-              fill = "lightblue", alpha = 0.3) +
-  geom_ribbon(aes(ymin = p25R,  ymax = p75R),
-              fill = "#ff8c00", alpha = 0.6) +
-  geom_line(aes(y = mC), color = "#00bfff", size = 0.8) +
-  geom_line(aes(y = mR), color = "#ff8c00", size = 0.8) +
-  geom_point(aes(y = mC), color = "#00bfff", size = 2) +
-  geom_point(aes(y = mR), color = "#ff8c00", size = 2) +
+  # 90% ribbons
+  geom_ribbon(aes(ymin = low90C, ymax = high90C, fill = "Consumer 90% CI"), alpha = 0.3) +
+  geom_ribbon(aes(ymin = low90R, ymax = high90R, fill = "Resource 90% CI"), alpha = 0.3) +
+  # 50% ribbons (IQR)
+  geom_ribbon(aes(ymin = p25C, ymax = p75C, fill = "Consumer IQR"), alpha = 0.6) +
+  geom_ribbon(aes(ymin = p25R, ymax = p75R, fill = "Resource IQR"), alpha = 0.6) +
+  # Median lines
+  geom_line(aes(y = medC, color = "Consumer Median"), size = 0.8) +
+  geom_line(aes(y = medR, color = "Resource Median"), size = 0.8) +
+  geom_point(aes(y = medC, color = "Consumer Median"), size = 2) +
+  geom_point(aes(y = medR, color = "Resource Median"), size = 2) +
+  scale_fill_manual(
+    name = "Shaded Areas",
+    values = c(
+      "Consumer 90% CI" = "lightblue",
+      "Consumer IQR"    = "#c49ec4",      # darker blue
+      "Resource 90% CI" = "#ffdd99",      # lighter orange
+      "Resource IQR"    = "#cc5500"       # warm orange/brown
+    )
+  ) +
+  scale_color_manual(
+    name = "Median Lines",
+    values = c(
+      "Consumer Median" = "#005288",   # dark steel blue
+      "Resource Median" = "#8b4513"    # saddle brown
+    )
+  ) +
   theme_classic() +
   labs(
-    title = "Timescale Separation: τ_C vs τ_R",
+    title = "Characteristic Timescales of Consumers and Resources",
     x     = "Temperature (°C)",
-    y     = "Timescale"
+    y     = "Characteristic Timescale"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title = element_text(size = 16),
+    axis.text  = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    legend.text  = element_text(size = 12)
   )
+
+# timescale separation version with only 50% IQR
+
+df_tau <- df %>%
+  group_by(T_C) %>%
+  summarise(
+    medC  = median(tau_C),
+    p25C  = quantile(tau_C, 0.25),
+    p75C  = quantile(tau_C, 0.75),
+    medR  = median(tau_R),
+    p25R  = quantile(tau_R, 0.25),
+    p75R  = quantile(tau_R, 0.75)
+  )
+
+ggplot(df_tau, aes(x = T_C)) +
+  # 50% ribbons (IQR only)
+  geom_ribbon(aes(ymin = p25C, ymax = p75C, fill = "Consumer IQR"), alpha = 0.6) +
+  geom_ribbon(aes(ymin = p25R, ymax = p75R, fill = "Resource IQR"), alpha = 0.6) +
+  # Median lines and points
+  geom_line(aes(y = medC, color = "Consumer median"), size = 0.8) +
+  geom_line(aes(y = medR, color = "Resource median"), size = 0.8) +
+  geom_point(aes(y = medC, color = "Consumer median"), size = 2) +
+  geom_point(aes(y = medR, color = "Resource median"), size = 2) +
+  scale_fill_manual(
+    name = "Shaded Areas",
+    values = c(
+      "Consumer IQR"  = "lightblue",   # muted purple
+      "Resource IQR"  = "#cc5500"    # warm orange-brown
+    )
+  ) +
+  scale_color_manual(
+    name = "Lines",
+    values = c(
+      "Consumer median" = "#005288",  # dark steel blue
+      "Resource median" = "#8b4513"   # saddle brown
+    )
+  ) +
+  theme_classic() +
+  labs(
+    title = "Characteristic timescales of consumers and resources",
+    x     = "Temperature (°C)",
+    y     = "Characteristic timescale"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title = element_text(size = 16),
+    axis.text  = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    legend.text  = element_text(size = 12),
+    legend.position = c(0.75, 0.8),
+    legend.background = element_rect(fill = alpha("white", 0.7), color = NA)
+  )
+
 
 
 df_td <- df_traj %>%
