@@ -2,8 +2,7 @@ library(ggplot2)
 library(dplyr)
 
 # 1. Read & prep data
-df <- read.csv("output/metrics_N50_coarse.csv")
-traj <- read.csv("output/traj_N50_coarse.csv")
+df <- read.csv("output/metrics_final_coarse.csv")
 
 df <- df[is.finite(df$ErrEqAb), ]
 bins_K   <- sort(unique(df$T_bin_K))
@@ -197,8 +196,8 @@ plot_temp_metric_boxplot_choose <- function(df, temp_col, metric_col,
     labs(x = "Temperature (°C)", y = y_label) +
     theme_classic() +
     theme(
-      axis.text  = element_text(size = 12),
-      axis.title = element_text(size = 14)
+      axis.text  = element_text(size = 15),
+      axis.title = element_text(size = 24)
     )
   
   # Extract whiskers info
@@ -235,14 +234,14 @@ plot_temp_metric_boxplot_choose <- function(df, temp_col, metric_col,
     p <- p + coord_cartesian(ylim = ylim_range)
   }
   
-  print(p)
+  return(p)
 }
 
 
 # diversity 
 
 plot_temp_metric_boxplot_choose(df, "T_bin_K", "jaccard",y_label = "Jaccard index")
-plot_temp_metric_boxplot_choose(df, "T_bin_K", "bray_curtis",y_label = "Bray-Curtis index")
+plot_temp_metric_boxplot_choose(df, "T_bin_K", "bray_curtis",y_label = "Bray-Curtis dissimilarity")
 plot_temp_metric_boxplot_choose(df, "T_bin_K", "bray_curtis",y_label = "Bray-Curtis index",zoom_only=TRUE)
 plot_temp_metric_boxplot_choose(df, "T_bin_K", "shannon_mi",y_label = "MiCRM Shannon diversity index")
 plot_temp_metric_boxplot_choose(df, "T_bin_K", "shannon_lv",y_label = "ELVM Shannon diversity index")
@@ -252,14 +251,14 @@ plot_temp_metric_boxplot_choose(df, "T_bin_K", "shannon_lv",y_label = "ELVM Shan
 
 plot_temp_metric_boxplot_choose(df, "T_bin_K", "ErrEqAb",y_label = "Equilibrium abundance deviation log-ratio")
 plot_temp_metric_boxplot_choose(df, "T_bin_K", "ErrEqAb",y_label = "Equilibrium abundance deviation log-ratio",zoom_only = TRUE)
-plot_temp_metric_boxplot_choose(traj, "T_bin_K", "ErrTraj",y_label = "Trajectory deviation log-ratio")
-plot_temp_metric_boxplot_choose(traj, "T_bin_K", "ErrTraj",y_label = "Trajectory deviation log-ratio", zoom_only=TRUE)
+plot_temp_metric_boxplot_choose(df, "T_bin_K", "ErrTraj",y_label = "Trajectory deviation log-ratio")
+plot_temp_metric_boxplot_choose(df, "T_bin_K", "ErrTraj",y_label = "Trajectory deviation log-ratio", zoom_only=TRUE)
 
 
 # stability / reactivity 
 
-plot_temp_metric_boxplot_choose(df, "T_bin_K", "abs_stab_err",y_label = "Stability deviation")
-plot_temp_metric_boxplot_choose(df, "T_bin_K", "abs_react_err",y_label = "Reactivity deviation")
+plot_temp_metric_boxplot_choose(df, "T_bin_K", "abs_stab_err",y_label = expression("|"*Re(lambda[dom](J[LV]))-Re(lambda[dom](J[Mi]))*"|"))
+plot_temp_metric_boxplot_choose(df, "T_bin_K", "abs_react_err",y_label = expression("|"*Re(lambda[dom](H[LV]))-Re(lambda[dom](H[Mi]))*"|"))
 # other plots are not box plots (continuous GLV vs MiCRM stability/reactivity) 
 
 
@@ -279,9 +278,16 @@ plot_temp_metric_boxplot_choose(df, "T_bin_K", "non_normality", y_label = expres
 # test ELVM stability / reactivity just to see what it looks like
 plot_temp_metric_boxplot_choose(df, "T_bin_K", "stab_glv",y_label = expression(paste("ELVM ", Re(lambda[dom](J)))))
 plot_temp_metric_boxplot_choose(df, "T_bin_K", "stab_glv",y_label = expression(paste("ELVM ", Re(lambda[dom](J)))), zoom_only=TRUE)
-plot_temp_metric_boxplot_choose(df, "T_bin_K", "react_glv",y_label = expression(paste("ELVM ", Re(lambda[dom](H)))))
+plot_temp_metric_boxplot_choose(df, "T_bin_K", "react_glv", 
+                                y_label =expression(Re(lambda[dom](H[LV])))) +
+  geom_hline(yintercept = 0, linetype = "dotted", linewidth = 0.4)
 
+# box plots for stab/react spread (individual) 
 
+plot_temp_metric_boxplot_choose(df, "T_bin_K", "stab_mi",y_label = expression(Re(lambda[dom](J[Mi]))))
+plot_temp_metric_boxplot_choose(df, "T_bin_K", "stab_glv",y_label = expression(Re(lambda[dom](J[LV]))))
+plot_temp_metric_boxplot_choose(df, "T_bin_K", "react_mi",y_label = expression(Re(lambda[dom](H[Mi]))))
+plot_temp_metric_boxplot_choose(df, "T_bin_K", "react_mi",y_label = expression(Re(lambda[dom](H[LV]))))
 
 
 
@@ -292,7 +298,7 @@ plot_temp_metric_boxplot_choose(df, "T_bin_K", "react_glv",y_label = expression(
 
 
 
-df_fine <- read_csv("output/metrics_N50.csv") 
+df_fine <- read_csv("output/metrics_final.csv") 
 
 
 
@@ -328,8 +334,8 @@ ggplot(df_tau, aes(x = T_C)) +
   ) +
   theme(
     plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
-    axis.title = element_text(size = 14),
-    axis.text  = element_text(size = 12),
+    axis.title = element_text(size = 20),
+    axis.text  = element_text(size = 15),
     legend.title = element_text(size = 14),
     legend.text  = element_text(size = 12),
     legend.position = c(0.75, 0.8),
@@ -358,46 +364,108 @@ ggplot(df_eps, aes(x = T_C, y = med)) +
     y = expression(epsilon)
   ) +
   theme(
-    axis.title = element_text(size = 14),
-    axis.text  = element_text(size = 12),
+    axis.title = element_text(size = 20),
+    axis.text  = element_text(size = 15),
     legend.position = "none",
     plot.title = element_blank()
   )
 
 
 
-# stability and reactivity 
+# stab/react: plot ELVM and MiCRM ranges separately (probably supplementary) 
+
+
+plot_overlay_single <- function(df, col, lab, ylabel, hlines = NULL, hline = NULL) {
+  
+  # Labels for legend
+  line_lab <- paste0(lab, " median")
+  fill_lab <- paste0(lab, " 90% range")
+  
+  # Summarise stats
+  df_stats <- df %>%
+    group_by(T_C) %>%
+    summarise(
+      med   = median(.data[[col]], na.rm = TRUE),
+      low90 = quantile(.data[[col]], 0.05, na.rm = TRUE),
+      high90 = quantile(.data[[col]], 0.95, na.rm = TRUE)
+    )
+  
+  # Plot
+  ggplot(df_stats, aes(x = T_C)) +
+    # Ribbon with legend
+    geom_ribbon(aes(ymin = low90, ymax = high90, fill = fill_lab), alpha = 0.4) +
+    
+    # Median line and points with legend
+    geom_line(aes(y = med, color = line_lab), size = 0.8) +
+    geom_point(aes(y = med, color = line_lab), size = 2, shape = ifelse(lab == "MiCRM", 16, 17)) +
+    
+    # Optional horizontal lines
+    { if (!is.null(hline)) geom_hline(yintercept = hline, linetype = "dashed", color = "grey40") } +
+    { if (!is.null(hlines)) lapply(hlines, function(h) geom_hline(yintercept = h, linetype = "dashed", color = "grey40")) } +
+    
+    # Manual legend colors (black for line, grey for ribbon)
+    scale_color_manual(values = setNames("black", line_lab)) +
+    scale_fill_manual(values = setNames("grey80", fill_lab)) +
+    
+    labs(
+      x = "Temperature (°C)",
+      y = ylabel,
+      color = NULL,
+      fill = NULL
+    ) +
+    
+    theme_classic() +
+    theme(
+      axis.title = element_text(size = 24),
+      axis.text  = element_text(size = 15),
+      legend.text = element_text(size = 15),
+      legend.position = c(0.2, 0.2),
+      legend.direction = "vertical",
+      legend.background = element_rect(fill = alpha("white", 0.7), color = NA),
+      legend.box = "vertical",
+      legend.spacing.y = unit(5, "pt")
+    )
+}
+
+
+
+# before plotting either MiCRM / ELVM, make sure to adjust legend position 
+# for MiCRM plot, move legend to bottom left corner (0.2, 0.2) 
+# for ELVM plot, move legend to top left corner (0.15, 0.85)
+
+
+# single plots for stability (to show individual spread) 
+plot_overlay_single(df, "stab_mi", "MiCRM", expression(Re(lambda[dom](J[Mi]))))
+plot_overlay_single(df, "stab_glv", "ELVM", expression(Re(lambda[dom](J[LV]))))
+
+
+# single plots for reactivity (to show individual spread) 
+plot_overlay_single(df, "react_mi", "MiCRM", expression(Re(lambda[dom](H[Mi]))))
+plot_overlay_single(df, "react_glv", "ELVM", expression(Re(lambda[dom](H[LV]))))
+
+
+# stab/react, no shading, overlay 
+
 plot_overlay <- function(df, col1, col2, lab1, lab2, ylabel, hlines = NULL, hline = NULL) {
   
-  # Legend labels
+  # Legend labels (median only now)
   line_lab1 <- paste0(lab1, " median")
   line_lab2 <- paste0(lab2, " median")
-  fill_lab1 <- paste0(lab1, " 90% range")
-  fill_lab2 <- paste0(lab2, " 90% range")
   
-  # Colors
+  # Colors (still distinguishable)
   color_vals <- setNames(c("#005288", "darkorange"), c(line_lab1, line_lab2))
-  fill_vals  <- setNames(c("lightblue", "gold"), c(fill_lab1, fill_lab2))
   
   # Summarised data
   df_stats <- df %>%
     group_by(T_C) %>%
     summarise(
-      med1     = median(.data[[col1]], na.rm = TRUE),
-      low90_1  = quantile(.data[[col1]], 0.05, na.rm = TRUE),
-      high90_1 = quantile(.data[[col1]], 0.95, na.rm = TRUE),
-      med2     = median(.data[[col2]], na.rm = TRUE),
-      low90_2  = quantile(.data[[col2]], 0.05, na.rm = TRUE),
-      high90_2 = quantile(.data[[col2]], 0.95, na.rm = TRUE)
+      med1 = median(.data[[col1]], na.rm = TRUE),
+      med2 = median(.data[[col2]], na.rm = TRUE)
     )
   
   # Plot
   ggplot(df_stats, aes(x = T_C)) +
-    # Shading
-    geom_ribbon(aes(ymin = low90_1, ymax = high90_1, fill = fill_lab1), alpha = 0.3) +
-    geom_ribbon(aes(ymin = low90_2, ymax = high90_2, fill = fill_lab2), alpha = 0.3) +
-    
-    # Medians
+    # Median lines and points
     geom_line(aes(y = med1, color = line_lab1), size = 0.8) +
     geom_point(aes(y = med1, color = line_lab1), shape = 16, size = 2) +
     geom_line(aes(y = med2, color = line_lab2), size = 0.8) +
@@ -409,34 +477,25 @@ plot_overlay <- function(df, col1, col2, lab1, lab2, ylabel, hlines = NULL, hlin
     
     # Manual legends
     scale_color_manual(values = color_vals) +
-    scale_fill_manual(values = fill_vals) +
     
     labs(
       x = "Temperature (°C)",
       y = ylabel,
-      color = NULL,
-      fill = NULL
+      color = NULL
     ) +
     
     theme_classic() +
     theme(
-      axis.title = element_text(size = 14),
-      axis.text  = element_text(size = 12),
-      legend.text = element_text(size = 12),
-      legend.position = c(0.15, 0.85),
+      axis.title = element_text(size = 20),
+      axis.text  = element_text(size = 15),
+      legend.text = element_text(size = 20),
+      legend.position = c(0.2, 0.2),
       legend.direction = "vertical",
       legend.background = element_rect(fill = alpha("white", 0.7), color = NA),
       legend.box = "vertical",
       legend.spacing.y = unit(5, "pt")
     )
 }
-
-
-
-# get rid of complex number format for ease of plotting 
-
-df$stab_mi <- as.numeric(gsub("\\+0j|\\(|\\)", "", df$stab_mi))
-df$stab_glv <- as.numeric(gsub("\\+0j|\\(|\\)", "", df$stab_glv))
 
 
 plot_overlay(
@@ -448,6 +507,7 @@ plot_overlay(
   ylabel = expression(Re(lambda[dom](J)))
 )
 
+
 plot_overlay(
   df = df,
   col1 = "react_mi",
@@ -456,10 +516,6 @@ plot_overlay(
   lab2 = "ELVM",
   ylabel = expression(Re(lambda[dom](H)))
 )
-
-
-
-
 
 
 
@@ -474,7 +530,7 @@ plot_scatter <- function(df, xcol, ycol, xl, yl, title = "", log_x = FALSE, log_
     scale_color_gradientn(
       colours = c("#2c7bb6", "#abd9e9", "#ffffbf", "#fdae61", "#d7191c"),
       name = "Temperature (°C)",
-      limits = c(10, 40)
+      limits = c(10, 40),
     ) +
     labs(
       x = xl,
@@ -483,11 +539,11 @@ plot_scatter <- function(df, xcol, ycol, xl, yl, title = "", log_x = FALSE, log_
     ) +
     theme_classic() +
     theme(
-      plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
-      axis.title = element_text(size = 14),
-      axis.text  = element_text(size = 12),
-      legend.title = element_text(size = 12),
-      legend.text  = element_text(size = 10)
+      plot.title   = element_text(hjust = 0.5, size = 16, face = "bold"),
+      axis.title   = element_text(size = 20),
+      axis.text    = element_text(size = 15),
+      legend.title = element_text(size = 15),
+      legend.text  = element_text(size = 15)
     )
   
   # Apply log scales if requested
@@ -499,14 +555,16 @@ plot_scatter <- function(df, xcol, ycol, xl, yl, title = "", log_x = FALSE, log_
 
 
 
+
 # Plot 1 - hermitian vs stability 
 p1 <- plot_scatter(
   df,
   xcol  = "hessian_norm",
   ycol  = "abs_stab_err",
-  xl    = "log(Hessian norm)",
-  yl    = "Absolute stability deviations",
-  log_x = TRUE
+  xl    = "Log(Hessian norm)",
+  yl    = expression("Log( |"*Re(lambda[dom](J[LV]))-Re(lambda[dom](J[Mi]))*"| )"),
+  log_x=TRUE,
+  log_y=TRUE
 )
 print(p1)
 
@@ -515,9 +573,10 @@ p2 <- plot_scatter(
   df,
   xcol  = "hessian_norm",
   ycol  = "abs_react_err",
-  xl    = "log(Hessian norm)",
-  yl    = "Absolute reactivity deviations",
-  log_x=TRUE
+  xl    = "Log(Hessian norm)",
+  yl    = expression("Log( |"*Re(lambda[dom](H[LV]))-Re(lambda[dom](H[Mi]))*"| )"),
+  log_x=TRUE,
+  log_y=TRUE
 )
 print(p2)
 
@@ -526,8 +585,8 @@ p3 <- plot_scatter(
   df,
   xcol  = "non_normality",
   ycol  = "abs_stab_err",
-  xl    = expression(paste("log(|| ", J * J^{T} - J^{T} * J, " ||)")),
-  yl    = "log(Absolute stability deviations)",
+  xl    = expression(paste("Log(|| ", J * J^{T} - J^{T} * J, " ||)")),
+  yl    = expression("Log( |"*Re(lambda[dom](J[LV]))-Re(lambda[dom](J[Mi]))*"| )"),
   log_x=TRUE,
   log_y=TRUE
 )
@@ -538,8 +597,8 @@ p4 <- plot_scatter(
   df,
   xcol  = "non_normality",
   ycol  = "abs_react_err",
-  xl    = expression(paste("log(|| ", J * J^{T} - J^{T} * J, " ||)")),
-  yl    = "log(Absolute reactivity deviations)",
+  xl    = expression(paste("Log(|| ", J * J^{T} - J^{T} * J, " ||)")),
+  yl    = expression("Log( |"*Re(lambda[dom](H[LV]))-Re(lambda[dom](H[Mi]))*"| )"),
   log_x=TRUE,
   log_y=TRUE
 )
@@ -560,13 +619,19 @@ p5 <- plot_scatter(
   df,
   xcol  = "hessian_norm",
   ycol  = "epsilon",
-  xl    = "log(Hessian norm)",
+  xl    = "Log(Hessian norm)",
   yl    = expression(epsilon),
-  log_x=TRUE
+  log_x = TRUE
 )
-p5 <- p5 + geom_hline(yintercept = 1, linetype = "dotted", color = "grey40")
-print(p5)
 
+# Add horizontal line and set y-axis breaks at 1-unit intervals
+p5 <- p5 +
+  geom_hline(yintercept = 1, linetype = "dotted", color = "grey40") +
+  scale_y_continuous(breaks = seq(floor(min(df$epsilon, na.rm = TRUE)),
+                                  ceiling(max(df$epsilon, na.rm = TRUE)), 
+                                  by = 1))
+
+print(p5)
 
 
 # non normality vs epsilon (does interconnectedness drive timescale sep?)
@@ -574,11 +639,17 @@ p6 <- plot_scatter(
   df,
   xcol  = "non_normality",
   ycol  = "epsilon",
-  xl    = expression(paste("log(|| ", J * J^{T} - J^{T} * J, " ||)")),
+  xl    = expression(paste("Log(|| ", J * J^{T} - J^{T} * J, " ||)")),
   yl    = expression(epsilon),
   log_x=TRUE
 )
-p6 <- p6 + geom_hline(yintercept = 1, linetype = "dotted", color = "grey40")
+
+p6 <- p6 +
+  geom_hline(yintercept = 1, linetype = "dotted", color = "grey40") +
+  scale_y_continuous(breaks = seq(floor(min(df$epsilon, na.rm = TRUE)),
+                                  ceiling(max(df$epsilon, na.rm = TRUE)), 
+                                  by = 1))
+
 print(p6)
 
 
