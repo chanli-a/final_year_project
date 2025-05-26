@@ -16,65 +16,115 @@ df_traj <- read_csv("output/traj_N50.csv") %>%
 
 # Equilibrium abundance error
 
-
-df_err <- df %>%
-  group_by(T_C) %>%
-  summarise(
-    mean   = mean(ErrEqAb,      na.rm = TRUE),
-    p25    = quantile(ErrEqAb, 0.25, na.rm = TRUE),
-    p75    = quantile(ErrEqAb, 0.75, na.rm = TRUE),
-    low95  = quantile(ErrEqAb, 0.025, na.rm = TRUE),
-    high95 = quantile(ErrEqAb, 0.975, na.rm = TRUE)
-  ) %>%
-  ungroup()
-
-# Identify outliers per T_C
-df_out <- df %>%
-  group_by(T_C) %>%
-  filter(ErrEqAb < quantile(ErrEqAb, 0.025, na.rm = TRUE) |
-           ErrEqAb > quantile(ErrEqAb, 0.975, na.rm = TRUE)) %>%
-  ungroup()
-
-# Plot with explicit legends
-p1 <- ggplot() +
-  # 95% interval
-  geom_ribbon(data = df_err,
-              aes(x = T_C, ymin = low95, ymax = high95, fill = "95% interval"),
-              alpha = 0.3) +
-  # 50% IQR
-  geom_ribbon(data = df_err,
-              aes(x = T_C, ymin = p25, ymax = p75, fill = "50% IQR"),
-              alpha = 0.6) +
-  # Mean line
-  geom_line(data = df_err,
-            aes(x = T_C, y = mean, color = "Mean"),
-            size = 0.8) +
-  geom_point(data = df_err,
-             aes(x = T_C, y = mean, shape = "Mean", color = "Mean"),
-             size = 2) +
-  # Outliers
-  geom_point(data = df_out,
-             aes(x = T_C, y = ErrEqAb, shape = "Outliers"),
-             color = "lightblue", size = 2, alpha = 0.7) +
-  # Reference line
+ggplot(df_err, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95, fill = "95% interval"), alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25,  ymax = p75,  fill = "50% IQR"),       alpha = 0.6) +
+  geom_line(aes(y = med, color = "Median"),      size = 0.8) +
+  geom_point(aes(y = med, color = "Median", shape = "Median"), size = 2) +
   geom_hline(yintercept = 0, linetype = "dashed") +
-  # Manual scales so we get one legend
-  scale_fill_manual(name = "", values = c("50% IQR" = "#c49ec4", "95% interval" = "lightblue")) +
-  scale_color_manual(name = "", values = c("Mean" = "black")) +
-  scale_shape_manual(name = "", values = c("Mean" = 16, "Outliers" = 17)) +
+  scale_fill_manual(
+    name   = "",
+    values = c("95% interval" = "lightblue", "50% IQR" = "#c49ec4"),
+    guide  = guide_legend(order = 2)
+  ) +
+  scale_color_manual(
+    name   = "",
+    values = c("Median" = "black"),
+    guide  = guide_legend(order = 1)
+  ) +
+  scale_shape_manual(
+    name   = "",
+    values = c("Median" = 16),
+    guide  = guide_legend(order = 1)
+  ) +
   theme_classic() +
-  labs(
-    title = "Equilibrium Abundance Error",
-    x     = "Temperature (°C)",
-    y     = "Error"
+  labs(x = "Temperature (°C)", y = "Error") +
+  theme(
+    axis.title      = element_text(size = 16),
+    axis.text       = element_text(size = 14),
+    legend.title    = element_text(size = 14),
+    legend.text     = element_text(size = 12),
+    legend.position = c(0.2, 0.2),
+    legend.background = element_rect(fill = alpha("white", 0.7), color = NA)
   )
 
-# Display:
-print(p1)
+# updated equilibrium abundance, without 95% interval 
+
+ggplot(df_err, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = p25, ymax = p75, fill = "50% IQR"), alpha = 0.6) +
+  geom_line(aes(y = med, color = "Median", group = 1), size = 0.8) +
+  geom_point(aes(y = med, color = "Median", shape = "Median"), size = 2) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  scale_fill_manual(
+    name = "",
+    values = c("50% IQR" = "#c49ec4"),
+    guide = guide_legend(order = 2)
+  ) +
+  scale_color_manual(
+    name = "",
+    values = c("Median" = "black"),
+    guide = guide_legend(order = 1)
+  ) +
+  scale_shape_manual(
+    name = "",
+    values = c("Median" = 16),
+    guide = guide_legend(order = 1)
+  ) +
+  theme_classic() +
+  labs(x = "Temperature (°C)", y = "Error") +
+  theme(
+    axis.title        = element_text(size = 16),
+    axis.text         = element_text(size = 14),
+    legend.title      = element_text(size = 14),
+    legend.text       = element_text(size = 12),
+    legend.position   = c(0.2, 0.2),
+    legend.spacing.y  = unit(0.0, 'cm'),
+    legend.background = element_rect(fill = alpha("white", 0.7), color = NA)
+  ) +
+  guides(
+    fill = guide_legend(order = 2),
+    color = guide_legend(order = 1),
+    shape = guide_legend(order = 1)
+  )
 
 
 
-# Summarise
+# trajectory deviation
+
+df_td <- df_traj %>%
+  group_by(T_C) %>%
+  summarise(
+    med    = median(ErrTraj),
+    p25    = quantile(ErrTraj, 0.25),
+    p75    = quantile(ErrTraj, 0.75),
+    low95  = quantile(ErrTraj, 0.025),
+    high95 = quantile(ErrTraj, 0.975)
+  )
+
+ggplot(df_td, aes(x = T_C)) +
+  geom_ribbon(aes(ymin = low95, ymax = high95, fill = "95% interval"), alpha = 0.3) +
+  geom_ribbon(aes(ymin = p25, ymax = p75, fill = "50% IQR"), alpha = 0.6) +
+  geom_line(aes(y = med, color = "Median"), size = 0.8) +
+  geom_point(aes(y = med, color = "Median", shape = "Median"), size = 2) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  scale_fill_manual(name = "", values = c("95% interval" = "lightblue", "50% IQR" = "#c49ec4")) +
+  scale_color_manual(name = "", values = c("Median" = "black")) +
+  scale_shape_manual(name = "", values = c("Median" = 16)) +
+  theme_classic() +
+  labs(x = "Temperature (°C)", y = "ErrTraj") +
+  theme(
+    axis.title = element_text(size = 16),
+    axis.text  = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    legend.text  = element_text(size = 12),
+    legend.position = c(0.2, 0.2),
+    legend.background = element_rect(fill = alpha("white", 0.7), color = NA)
+  )
+
+
+
+
+# species overlaps 
 df_ov <- df %>%
   group_by(T_C) %>%
   summarise(
@@ -122,25 +172,20 @@ print(p2)
 
 
 
-# Summarise
+# jaccard index 
+
+# Update summary dataframe to include median
 df_j <- df %>%
   group_by(T_C) %>%
   summarise(
-    mean   = mean(jaccard,      na.rm = TRUE),
+    median = median(jaccard,     na.rm = TRUE),
     p25    = quantile(jaccard, 0.25, na.rm = TRUE),
     p75    = quantile(jaccard, 0.75, na.rm = TRUE),
     low95  = quantile(jaccard, 0.025, na.rm = TRUE),
     high95 = quantile(jaccard, 0.975, na.rm = TRUE)
   ) %>% ungroup()
 
-# Outliers
-df_j_out <- df %>%
-  group_by(T_C) %>%
-  filter(jaccard < quantile(jaccard, 0.025, na.rm=TRUE) |
-           jaccard > quantile(jaccard, 0.975, na.rm=TRUE)) %>%
-  ungroup()
-
-# Plot
+# Plot without outliers, using median
 p3 <- ggplot() +
   geom_ribbon(data = df_j,
               aes(x = T_C, ymin = low95, ymax = high95, fill = "95% interval"),
@@ -149,25 +194,34 @@ p3 <- ggplot() +
               aes(x = T_C, ymin = p25, ymax = p75, fill = "50% IQR"),
               alpha = 0.6) +
   geom_line(data = df_j,
-            aes(x = T_C, y = mean, color = "Mean"),
+            aes(x = T_C, y = median, color = "Median"),
             size = 0.8) +
   geom_point(data = df_j,
-             aes(x = T_C, y = mean, shape = "Mean", color = "Mean"),
+             aes(x = T_C, y = median, shape = "Median", color = "Median"),
              size = 2) +
-  geom_point(data = df_j_out,
-             aes(x = T_C, y = jaccard, shape = "Outliers"),
-             color = "lightblue", size = 2, alpha = 0.7) +
-  scale_fill_manual(name = "", values = c("50% IQR" = "#c49ec4", "95% interval" = "lightblue")) +
-  scale_color_manual(name = "", values = c("Mean" = "black")) +
-  scale_shape_manual(name = "", values = c("Mean" = 16, "Outliers" = 17)) +
+  scale_fill_manual(
+    name = "",
+    values = c("50% IQR" = "#c49ec4", "95% interval" = "lightblue")
+  ) +
+  scale_color_manual(
+    name = "",
+    values = c("Median" = "black")
+  ) +
+  scale_shape_manual(
+    name = "",
+    values = c("Median" = 16)
+  ) +
   geom_hline(yintercept = 1.0, linetype = "dashed") +
+  coord_cartesian(ylim = c(NA, 1.2)) +  # Limit y-axis max to 1.2
   theme_classic() +
   labs(
     title = "Jaccard Similarity",
     x     = "Temperature (°C)",
     y     = "Jaccard Index"
   )
+
 print(p3)
+
 
 
 
@@ -466,11 +520,12 @@ ggplot(df_eps, aes(x = T_C)) +
   )
 
 
+
 # Log10(ε/t_eq)
 df_loge <- df %>%
   group_by(T_C) %>%
   summarise(
-    mean   = mean(log10_eps_t_eq),
+    med    = median(log10_eps_t_eq),
     p25    = quantile(log10_eps_t_eq, 0.25),
     p75    = quantile(log10_eps_t_eq, 0.75),
     low95  = quantile(log10_eps_t_eq, 0.025),
@@ -478,18 +533,44 @@ df_loge <- df %>%
   )
 
 ggplot(df_loge, aes(x = T_C)) +
-  geom_ribbon(aes(ymin = low95, ymax = high95),
-              fill = "lightblue", alpha = 0.3) +
-  geom_ribbon(aes(ymin = p25,  ymax = p75),
-              fill = "#c49ec4", alpha = 0.6) +
-  geom_line(aes(y = mean), size = 0.8) +
-  geom_point(aes(y = mean), size = 2) +
+  # 95% CI ribbon
+  geom_ribbon(aes(ymin = low95, ymax = high95, fill = "95% CI"), alpha = 0.3) +
+  # IQR ribbon
+  geom_ribbon(aes(ymin = p25, ymax = p75, fill = "IQR"), alpha = 0.6) +
+  # Median line and points
+  geom_line(aes(y = med, color = "Median"), size = 0.8) +
+  geom_point(aes(y = med, color = "Median"), size = 2) +
+  # Custom color/fill scales
+  scale_fill_manual(
+    name = "Shaded areas",
+    values = c(
+      "95% CI" = "lightblue",
+      "IQR"    = "#c49ec4"
+    )
+  ) +
+  scale_color_manual(
+    name = "Line",
+    values = c(
+      "Median" = "black"  # dark blue
+    )
+  ) +
+  # Theme and formatting
   theme_classic() +
   labs(
-    title = "Log₁₀(ε / t_eq)",
+    title = "Consumer-resource timescale separation relative to system equilibration time",
     x     = "Temperature (°C)",
-    y     = "log10(ε / t_eq)"
+    y     = expression(log[10](epsilon / t[eq]))
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title = element_text(size = 16),
+    axis.text  = element_text(size = 14),
+    legend.title = element_text(size = 14),
+    legend.text  = element_text(size = 12),
+    legend.position = c(0.82, 0.8),
+    legend.background = element_rect(fill = alpha("white", 0.7), color = NA)
   )
+
 
 
 
@@ -606,30 +687,5 @@ ggplot(df_tau, aes(x = T_C)) +
     legend.background = element_rect(fill = alpha("white", 0.7), color = NA)
   )
 
-
-
-df_td <- df_traj %>%
-  group_by(T_C) %>%
-  summarise(
-    mean   = mean(ErrTraj),
-    p25    = quantile(ErrTraj, 0.25),
-    p75    = quantile(ErrTraj, 0.75),
-    low95  = quantile(ErrTraj, 0.025),
-    high95 = quantile(ErrTraj, 0.975)
-  )
-
-ggplot(df_td, aes(x = T_C)) +
-  geom_ribbon(aes(ymin = low95, ymax = high95),
-              fill = "lightblue", alpha = 0.3) +
-  geom_ribbon(aes(ymin = p25,  ymax = p75),
-              fill = "#c49ec4", alpha = 0.6) +
-  geom_line(aes(y = mean), size = 0.8) +
-  geom_point(aes(y = mean), size = 2) +
-  theme_classic() +
-  labs(
-    title = "Trajectory Deviation",
-    x     = "Temperature (°C)",
-    y     = "ErrTraj"
-  )
 
 
