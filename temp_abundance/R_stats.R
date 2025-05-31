@@ -566,7 +566,29 @@ p1 <- plot_scatter(
   log_x=TRUE,
   log_y=TRUE
 )
+
+p1 <- p1 + geom_smooth(method = "lm", se = FALSE, color = "black", size=0.7)
+
+model1 <- lm(log10(abs_stab_err) ~ log10(hessian_norm), data = df)
+summ1 <- summary(model1)
+r2_1 <- summ1$r.squared
+p_slope1 <- summ1$coefficients["log10(hessian_norm)", "Pr(>|t|)"]
+
+p1 <- p1 + annotate(
+  geom  = "text",
+  x     = Inf,                # place at right edge
+  y     = Inf,                # place at top edge
+  label = bquote(R^2 == .(format(r2_1, digits = 2))),
+  hjust = 1.1,                # nudge inward horizontally
+  vjust = 1.5,                # nudge inward vertically
+  size  = 5                   # adjust text size
+)
+
 print(p1)
+cat(sprintf("R² = %.3f\np-value (slope) = %.3g\n", r2_1, p_slope1))
+
+
+
 
 # Plot 2 - hermitian vs reactivity 
 p2 <- plot_scatter(
